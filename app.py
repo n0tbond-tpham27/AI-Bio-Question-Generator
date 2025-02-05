@@ -1,30 +1,44 @@
-from flask import Flask, jsonify
-import random
+import os
+import openai
+from flask import Flask, jsonify, request
+from dotenv import load_dotenv
+
+# Load API Key from .env file
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
-questions = [
+def generate_biology_question():
+    """Generates a biology multiple-choice question using OpenAI's GPT API"""
+    prompt = """
+    Generate a challenging AP Biology or USABO-style multiple-choice question. 
+    Include four answer options (A, B, C, D) and specify the correct answer with an explanation. 
+    Format it in JSON as follows:
+
     {
-        "question": "Which organelle is responsible for energy production in cells?",
-        "options": ["Nucleus", "Mitochondria", "Ribosome", "Endoplasmic Reticulum"],
-        "explanation": "Mitochondria are known as the powerhouse of the cell because they generate ATP, the cell's energy currency."
-    },
-    {
-        "question": "What is the primary function of ribosomes?",
-        "options": ["DNA replication", "Protein synthesis", "Energy production", "Lipid metabolism"],
-        "explanation": "Ribosomes are responsible for synthesizing proteins by translating mRNA sequences into amino acid chains."
-    },
-    {
-        "question": "Which biomolecule serves as the primary energy source for cells?",
-        "options": ["Lipids", "Proteins", "Carbohydrates", "Nucleic acids"],
-        "explanation": "Carbohydrates, specifically glucose, serve as the main source of energy for cells through cellular respiration."
+        "question": "What is the primary function of the mitochondria?",
+        "options": ["A. DNA replication", "B. Protein synthesis", "C. Energy production", "D. Lipid metabolism"],
+        "correct_answer": "C",
+        "explanation": "Mitochondria generate ATP, which serves as the primary energy source for cellular functions."
     }
-]
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",  # Change to "gpt-3.5-turbo" if needed
+        messages=[{"role": "system", "content": prompt}]
+    )
+
+    try:
+        question_data = response["choices"][0]["message"]["content"]
+        return jsonify(question_data)
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 @app.route('/generate-question', methods=['GET'])
 def generate_question():
-    question_data = random.choice(questions)
-    return jsonify(question_data)
+    return generate_biology_question()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
