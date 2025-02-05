@@ -1,79 +1,165 @@
-
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Biology Question Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-      }
-      .container {
-        max-width: 600px;
-        margin: 50px auto;
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        text-align: center;
-      }
-      button {
-        cursor: pointer;
-        transition: 0.3s;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-100 flex justify-center items-center min-h-screen">
-    <div class="container">
-      <h1 class="text-2xl font-bold mb-4">
-        AI-Powered Biology Question Generator
-      </h1>
-      <button
-        id="generateBtn"
-        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-      >
-        Generate Question
-      </button>
-      <div id="questionContainer" class="mt-6 hidden">
-        <p class="text-lg font-semibold" id="questionText"></p>
-        <ul id="answerOptions" class="mt-3 space-y-2"></ul>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Biology Question Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- Start Menu -->
+  <div id="startMenu" class="flex flex-col items-center justify-center min-h-screen">
+    <h1 class="text-3xl font-bold mb-6">Welcome to the Biology Quiz!</h1>
+    <div class="mb-4">
+      <label class="block mb-2 text-lg">Select Difficulty:</label>
+      <select id="difficulty" class="p-2 border rounded">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+    <div class="mb-4">
+      <label class="block mb-2 text-lg">Number of Questions:</label>
+      <input id="questionCount" type="number" min="1" value="5" class="p-2 border rounded" />
+    </div>
+    <button id="startQuizBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 max-w-xs">Start Quiz</button>
+  </div>
+
+  <!-- Quiz Container -->
+  <div id="quizContainer" class="hidden flex flex-col items-center justify-center min-h-screen px-4">
+    <div class="bg-white p-6 rounded shadow-md w-full max-w-2xl">
+      <div id="questionSection">
+        <p id="questionText" class="text-xl font-semibold mb-4"></p>
+        <ul id="optionsList" class="space-y-3"></ul>
       </div>
-      <div id="explanationContainer" class="mt-4 hidden">
-        <h2 class="text-xl font-semibold">Explanation</h2>
+      <div id="explanationSection" class="hidden mt-4">
+        <h2 class="text-lg font-semibold">Explanation:</h2>
         <p id="explanationText" class="mt-2"></p>
       </div>
+      <button id="nextBtn" class="mt-6 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 hidden">Next Question</button>
     </div>
+  </div>
 
-    <script>
-      document
-        .getElementById("generateBtn")
-        .addEventListener("click", async () => {
-          const response = await fetch("/app.py");
-          const data = await response.json();
+  <!-- Results Container -->
+  <div id="resultsContainer" class="hidden flex flex-col items-center justify-center min-h-screen">
+    <div class="bg-white p-6 rounded shadow-md w-full max-w-2xl text-center">
+      <h1 class="text-2xl font-bold mb-4">Quiz Results</h1>
+      <p id="scoreText" class="text-xl mb-6"></p>
+      <button id="restartBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Restart Quiz</button>
+    </div>
+  </div>
 
-          document.getElementById("questionText").innerText = data.question;
-          const answerList = document.getElementById("answerOptions");
-          answerList.innerHTML = "";
-          data.options.forEach((option, index) => {
-            const li = document.createElement("li");
-            li.className =
-              "p-2 bg-gray-200 rounded-lg cursor-pointer hover:bg-gray-300";
-            li.innerText = option;
-            li.addEventListener("click", () => {
-              document.getElementById("explanationText").innerText =
-                data.explanation;
-              document
-                .getElementById("explanationContainer")
-                .classList.remove("hidden");
-            });
-            answerList.appendChild(li);
-          });
+  <script>
+    // Update this URL to point to your deployed backend (or localhost for testing)
+    const backendUrl = "http://localhost:5000";
 
-          document
-            .getElementById("questionContainer")
-            .classList.remove("hidden");
+    const startMenu = document.getElementById('startMenu');
+    const quizContainer = document.getElementById('quizContainer');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const questionText = document.getElementById('questionText');
+    const optionsList = document.getElementById('optionsList');
+    const explanationSection = document.getElementById('explanationSection');
+    const explanationText = document.getElementById('explanationText');
+    const nextBtn = document.getElementById('nextBtn');
+    const scoreText = document.getElementById('scoreText');
+
+    const difficultySelect = document.getElementById('difficulty');
+    const questionCountInput = document.getElementById('questionCount');
+    const startQuizBtn = document.getElementById('startQuizBtn');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let totalQuestions = 0;
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let quizQuestions = []; // This array will store question data objects
+
+    // Start quiz handler
+    startQuizBtn.addEventListener('click', () => {
+      totalQuestions = parseInt(questionCountInput.value);
+      currentQuestionIndex = 0;
+      score = 0;
+      quizQuestions = [];
+      startMenu.classList.add('hidden');
+      quizContainer.classList.remove('hidden');
+      loadNextQuestion();
+    });
+
+    // Function to load a question from backend
+    async function loadNextQuestion() {
+      explanationSection.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+      optionsList.innerHTML = '';
+      questionText.innerText = "Loading question...";
+
+      const difficulty = difficultySelect.value;
+      try {
+        const response = await fetch(`${backendUrl}/generate-question?difficulty=${difficulty}`);
+        // Expecting valid JSON response from the backend
+        const data = await response.json();
+        // Save the current question in the array for potential later use (like review)
+        quizQuestions[currentQuestionIndex] = data;
+        displayQuestion(data);
+      } catch (error) {
+        questionText.innerText = "Error loading question.";
+        console.error("Error fetching question:", error);
+      }
+    }
+
+    // Function to display a question and its options
+    function displayQuestion(data) {
+      questionText.innerText = data.question;
+      // Create option buttons
+      data.options.forEach((option) => {
+        const li = document.createElement('li');
+        li.className = "p-2 bg-gray-200 rounded cursor-pointer hover:bg-gray-300";
+        li.innerText = option;
+        li.addEventListener('click', () => {
+          // Disable all options after selection
+          Array.from(optionsList.children).forEach(child => child.classList.add('pointer-events-none'));
+          // Show explanation
+          explanationText.innerText = data.explanation;
+          explanationSection.classList.remove('hidden');
+          // Check answer if field "correct_answer" exists (assumes options start with labels "A.", etc.)
+          if (data.correct_answer) {
+            // Determine selected option's letter by splitting at the dot
+            const selectedLetter = option.split('.')[0].trim();
+            if (selectedLetter === data.correct_answer) {
+              score++;
+            }
+          }
+          nextBtn.classList.remove('hidden');
         });
-    </script>
-  </body>
+        optionsList.appendChild(li);
+      });
+    }
+
+    // Handler for Next button
+    nextBtn.addEventListener('click', () => {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < totalQuestions) {
+        loadNextQuestion();
+      } else {
+        showResults();
+      }
+    });
+
+    // Function to show quiz results
+    function showResults() {
+      quizContainer.classList.add('hidden');
+      resultsContainer.classList.remove('hidden');
+      scoreText.innerText = `You answered ${score} out of ${totalQuestions} questions correctly!`;
+    }
+
+    // Restart Quiz handler
+    restartBtn.addEventListener('click', () => {
+      resultsContainer.classList.add('hidden');
+      startMenu.classList.remove('hidden');
+    });
+  </script>
+</body>
 </html>
