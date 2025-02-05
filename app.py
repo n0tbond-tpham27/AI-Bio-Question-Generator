@@ -1,16 +1,14 @@
 import os
 import openai
-from flask import Flask, jsonify, request
-from dotenv import load_dotenv
+from flask import Flask, jsonify
 
-# Load API Key from .env file
-load_dotenv()
+# Fetch API key from GitHub Secrets (environment variable)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
 def generate_biology_question():
-    """Generates a biology multiple-choice question using OpenAI's GPT API"""
+    """Generates an AP Bio/USABO-style multiple-choice question using OpenAI"""
     prompt = """
     Generate a challenging AP Biology or USABO-style multiple-choice question. 
     Include four answer options (A, B, C, D) and specify the correct answer with an explanation. 
