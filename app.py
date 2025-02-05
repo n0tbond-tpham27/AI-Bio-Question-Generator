@@ -1,7 +1,7 @@
 import os
 import openai
 from flask import Flask, jsonify
-
+print("hello, it is working up to this point")
 # Fetch API key from GitHub Secrets (environment variable)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
