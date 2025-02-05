@@ -2,11 +2,12 @@ import os
 import json
 import openai
 from flask import Flask, jsonify, request
-
+from flask_cors import CORS
 
 openai.api_key = "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"
 
 app = Flask(__name__)
+CORS(app) 
 
 @app.route('/generate-question', methods=['GET'])
 def generate_question():
