@@ -1,41 +1,36 @@
 import os
+import json
 import openai
-from flask import Flask, jsonify
-print("hello, it is working up to this point")
-# Fetch API key from GitHub Secrets (environment variable)
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from flask import Flask, jsonify, request
+
+# Directly set your OpenAI API key (not recommended for production)
+openai.api_key = "your-api-key-here"  # Replace with your actual API key
 
 app = Flask(__name__)
 
-def generate_biology_question():
-    """Generates an AP Bio/USABO-style multiple-choice question using OpenAI"""
-    prompt = """
-    Generate a challenging AP Biology or USABO-style multiple-choice question. 
-    Include four answer options (A, B, C, D) and specify the correct answer with an explanation. 
-    Format it in JSON as follows:
-
-    {
-        "question": "What is the primary function of the mitochondria?",
-        "options": ["A. DNA replication", "B. Protein synthesis", "C. Energy production", "D. Lipid metabolism"],
-        "correct_answer": "C",
-        "explanation": "Mitochondria generate ATP, which serves as the primary energy source for cellular functions."
-    }
-    """
-
-    response = openai.ChatCompletion.create(
-        model="gpt-4",  # Change to "gpt-3.5-turbo" if needed
-        messages=[{"role": "system", "content": prompt}]
-    )
-
-    try:
-        question_data = response["choices"][0]["message"]["content"]
-        return jsonify(question_data)
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
 @app.route('/generate-question', methods=['GET'])
 def generate_question():
-    return generate_biology_question()
+    # Get difficulty from query parameters (default: medium)
+    difficulty = request.args.get('difficulty', 'medium')
+    prompt = f"""
+    Generate a challenging AP Biology or USABO-style multiple-choice question at {difficulty} difficulty.
+    Include four answer options labeled A., B., C., and D., specify the correct answer in a field called "correct_answer"
+    (just the letter, e.g., "C"), and provide an explanation for the correct answer.
+    Format your answer as valid JSON with these fields: question, options (an array of strings), correct_answer, explanation.
+    """
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # or "gpt-3.5-turbo" if preferred
+            messages=[{"role": "system", "content": prompt}],
+            temperature=0.7
+        )
+        content = response["choices"][0]["message"]["content"]
+        # Parse the generated JSON
+        question_data = json.loads(content)
+        return jsonify(question_data)
+    except Exception as e:
+        # In case of errors, return the error and raw content for debugging
+        return jsonify({"error": str(e), "raw": content if 'content' in locals() else ""})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
