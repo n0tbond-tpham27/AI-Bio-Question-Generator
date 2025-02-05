@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Biology Question Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        max-width: 600px;
+        margin: 50px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      button {
+        cursor: pointer;
+        transition: 0.3s;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="container">
+      <h1 class="text-2xl font-bold mb-4">
+        AI-Powered Biology Question Generator
+      </h1>
+      <button
+        id="generateBtn"
+        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+      >
+        Generate Question
+      </button>
+      <div id="questionContainer" class="mt-6 hidden">
+        <p class="text-lg font-semibold" id="questionText"></p>
+        <ul id="answerOptions" class="mt-3 space-y-2"></ul>
+      </div>
+      <div id="explanationContainer" class="mt-4 hidden">
+        <h2 class="text-xl font-semibold">Explanation</h2>
+        <p id="explanationText" class="mt-2"></p>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("generateBtn")
+        .addEventListener("click", async () => {
+          const response = await fetch("/generate-question");
+          const data = await response.json();
+
+          document.getElementById("questionText").innerText = data.question;
+          const answerList = document.getElementById("answerOptions");
+          answerList.innerHTML = "";
+          data.options.forEach((option, index) => {
+            const li = document.createElement("li");
+            li.className =
+              "p-2 bg-gray-200 rounded-lg cursor-pointer hover:bg-gray-300";
+            li.innerText = option;
+            li.addEventListener("click", () => {
+              document.getElementById("explanationText").innerText =
+                data.explanation;
+              document
+                .getElementById("explanationContainer")
+                .classList.remove("hidden");
+            });
+            answerList.appendChild(li);
+          });
+
+          document
+            .getElementById("questionContainer")
+            .classList.remove("hidden");
+        });
+    </script>
+  </body>
+</html>
+
+# Backend (Python - Flask) from flask import Flask, jsonify import random app =
+Flask(__name__) questions = [ { "question": "Which organelle is responsible for
+energy production in cells?", "options": ["Nucleus", "Mitochondria", "Ribosome",
+"Endoplasmic Reticulum"], "explanation": "Mitochondria are known as the
+powerhouse of the cell because they generate ATP, the cell's energy currency."
+}, { "question": "What is the primary function of ribosomes?", "options": ["DNA
+replication", "Protein synthesis", "Energy production", "Lipid metabolism"],
+"explanation": "Ribosomes are responsible for synthesizing proteins by
+translating mRNA sequences into amino acid chains." }, { "question": "Which
+biomolecule serves as the primary energy source for cells?", "options":
+["Lipids", "Proteins", "Carbohydrates", "Nucleic acids"], "explanation":
+"Carbohydrates, specifically glucose, serve as the main source of energy for
+cells through cellular respiration." } ] @app.route('/generate-question',
+methods=['GET']) def generate_question(): question_data =
+random.choice(questions) return jsonify(question_data) if __name__ ==
+'__main__': app.run(debug=True)
