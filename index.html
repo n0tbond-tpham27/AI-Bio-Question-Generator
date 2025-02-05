@@ -49,7 +49,7 @@
       document
         .getElementById("generateBtn")
         .addEventListener("click", async () => {
-          const response = await fetch("/generate-question");
+          const response = await fetch("/app.py");
           const data = await response.json();
 
           document.getElementById("questionText").innerText = data.question;
